@@ -21,7 +21,7 @@ import {
   CheckSquare,
   Square,
 } from "lucide-react";
-import TransactionList from "@/components/transaction-list";
+import { useRouter } from 'next/navigation';
 import {
   Dialog,
   DialogContent,
@@ -109,7 +109,7 @@ const Homepage = () => {
   );
   const [activeModalData, setActiveModalData] = useState<ECGData | null>(null);
   const [files, setFiles] = useState<File[]>([]);
-
+  const router = useRouter();
   // Greeting based on time of day
   const currentHour = new Date().getHours();
   let greeting = "Good morning";
@@ -137,7 +137,7 @@ const Homepage = () => {
       ssr: false,
       loading: () => <div>Loading ECG charts...</div>,
     }
-  );
+  ); // here 
 
   useEffect(() => {
     const authToken = localStorage.getItem(
@@ -152,6 +152,12 @@ const Homepage = () => {
     setEmail(user.email);
     setUserInfo(user.email);
     getHistory(user.email);
+
+    const fetchDashboardData = async () => {
+      const stats = await getUserECGStats(user.email);
+      setEcgStats(stats);
+    };
+    fetchDashboardData();
   }, []);
 
   async function setUserInfo(email: string) {
@@ -204,6 +210,39 @@ const Homepage = () => {
     setActiveModalData(historyItemData);
     setIsResultModalOpen(true);
   };
+  const getUserECGStats = async (email: string) => {
+    const { data, error } = await supabase
+      .from('history')
+      .select('*')
+      .eq('email', email);
+  
+    if (error) {
+      console.error('Error fetching ECG stats:', error);
+      return null;
+    }
+  
+    const totalECGs = data.length;
+    const normCount = data.filter(item => item.class === 'NORM').length;
+    const miCount = data.filter(item => item.class === 'MI').length;
+  
+    return {
+      totalECGs,
+      normCount,
+      miCount,
+      normPercentage: totalECGs > 0 ? Math.round((normCount / totalECGs) * 100) : 0,
+      miPercentage: totalECGs > 0 ? Math.round((miCount / totalECGs) * 100) : 0,
+      lastUpload: data.length > 0 ? new Date(data[0].created_at) : null
+    };
+  };
+  
+  const [ecgStats, setEcgStats] = useState<{
+    totalECGs: number;
+    normCount: number;
+    miCount: number;
+    normPercentage: number;
+    miPercentage: number;
+    lastUpload: Date | null;
+  } | null>(null);
 
   const ResultModal = () => {
     const dataToDisplay = activeModalData;
@@ -215,9 +254,9 @@ const Homepage = () => {
 
     // Lead names for display
     const leadNames = [
-      "I",
-      "II",
-      "III",
+      "Lead I",
+      "Lead II",
+      "Lead III",
       "aVR",
       "aVL",
       "aVF",
@@ -321,6 +360,16 @@ const Homepage = () => {
               </div>
             )}
           </div>
+            <div className="w-full mt-2">
+                <Button className="w-full flex items-center justify-center gap-2"
+                    onClick={(e) => {
+                      router.push('/results');
+                    }}
+                    style={{ cursor: "pointer" }}
+                >
+                    View All Results 
+                </Button>
+            </div>
         </DialogContent>
       </Dialog>
     );
@@ -494,6 +543,44 @@ const Homepage = () => {
                     </h2>
                   </div>
 
+                  <div className = "dashboard-card-content">
+
+                    <div className="dashboard-grid mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {/* Total ECGs Card */}
+                    <Card className="p-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium">Total ECGs Analyzed</h3>
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <p className="mt-2 text-2xl font-bold">
+                        {ecgStats?.totalECGs || 0}
+                      </p>
+                    </Card>
+
+                    {/* Normal Results Card */}
+                    <Card className="p-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium">Normal Results</h3>
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                      </div>
+                      <p className="mt-2 text-2xl font-bold">
+                        {ecgStats?.normCount || 0}
+                      </p>
+                    </Card>
+
+                    {/* MI Results Card */}
+                    <Card className="p-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium">Myocardial Infarction Detected</h3>
+                        <X className="h-4 w-4 text-red-500" />
+                      </div>
+                      <p className="mt-2 text-2xl font-bold">
+                        {ecgStats?.miCount || 0}
+                      </p>
+                    </Card>
+                  </div>
+                  </div>
+
                   {/* File upload section moved below */}
                   <div className="mt-6 border-2 border-dashed border-muted p-6 rounded-lg text-center">
                     <Input
@@ -538,131 +625,7 @@ const Homepage = () => {
                   )}
                 </div>
               </div>
-              <div className={styles.parent}>
-                <h1>History</h1>
-                <div className={styles.mainContent}>
-                  <div>
-                    <div className={styles.cardList}>
-                      {history ? (
-                        history.length > 0 ? (
-                          history.map((item, index) => (
-                            <div
-                              key={index}
-                              className={`${styles.card} ${item.class === "NORM" ? styles.normal : styles.abnormal}`}
-                              style={{ cursor: "default" }} // Changed from "pointer" to "default"
-                            >
-                              <div className={styles.cardHeader}>
-                                <div className={styles.statusIndicator}>
-                                  {item.class === "NORM" ? (
-                                    <CheckCircle
-                                      className={styles.successIcon}
-                                      size={18}
-                                    />
-                                  ) : (
-                                    <X className={styles.errorIcon} size={18} />
-                                  )}
-                                  <span>{item.class}</span>
-                                </div>
-                                <span className={styles.date}>
-                                  <CalendarDays
-                                    size={14}
-                                    className={styles.icon}
-                                  />
-                                  {new Date(
-                                    item.created_at
-                                  ).toLocaleDateString()}
-                                </span>
-                              </div>
-
-                              <div className={styles.probabilityRow}>
-                                {/* Normal Probability Ring */}
-                                <div className={styles.probabilityRing}>
-                                  <div className={styles.ringContainer}>
-                                    <div className={styles.ringBackground} />
-                                    <div
-                                      className={styles.ringFill}
-                                      style={{
-                                        borderColor: "#10B981", // green for normal
-                                        clipPath: `polygon(0 0, 100% 0, 100% ${item.norm_prob}%, 0 ${item.norm_prob}%)`,
-                                      }}
-                                    />
-                                    <div className={styles.ringCenter}>
-                                      <span className={styles.ringValue}>
-                                        {item.norm_prob.toFixed(0)}%
-                                      </span>
-                                      <span className={styles.ringLabel}>
-                                        Normal
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* MI Probability Ring */}
-                                <div className={styles.probabilityRing}>
-                                  <div className={styles.ringContainer}>
-                                    <div className={styles.ringBackground} />
-                                    <div
-                                      className={styles.ringFill}
-                                      style={{
-                                        borderColor: "#EF4444", // red for MI
-                                        clipPath: `polygon(0 0, 100% 0, 100% ${item.mi_prob}%, 0 ${item.mi_prob}%)`,
-                                      }}
-                                    />
-                                    <div className={styles.ringCenter}>
-                                      <span className={styles.ringValue}>
-                                        {item.mi_prob.toFixed(0)}%
-                                      </span>
-                                      <span className={styles.ringLabel}>
-                                        MI
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className={styles.time}>
-                                <div className={styles.clockTime}>
-                                  <Clock size={14} className={styles.icon} />
-                                  {new Date(
-                                    item.created_at
-                                  ).toLocaleTimeString()}
-                                </div>
-                                <div className={styles.chart}>
-                                  <p>
-                                    <strong>File:</strong>{" "}
-                                    {item.file.split("/").pop()}
-                                  </p>
-                                  <RiLineChartLine
-                                    size={20}
-                                    className={styles.chartIcon}
-                                    onClick={(e) => {
-                                      e.stopPropagation(); // Prevent event bubbling
-                                      handleViewHistoryItem(item);
-                                    }}
-                                    style={{ cursor: "pointer" }} // Show pointer cursor on hover
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className={styles.emptyState}>
-                            <FileText size={32} className={styles.emptyIcon} />
-                            <h2>No history found</h2>
-                            <p>Upload your first ECG to see results here</p>
-                          </div>
-                        )
-                      ) : (
-                        <div className={styles.loadingState}>
-                          <div className={styles.spinner}></div>
-                          <h2>Loading your history</h2>
-                          <p>Please wait while we load your data</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              
             </div>
           </div>
         </SidebarInset>
