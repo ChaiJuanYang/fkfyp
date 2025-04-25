@@ -23,7 +23,7 @@ import {
   RiLoginCircleLine,
   RiLayoutLeftLine,
   RiSettings3Line,
-  RiLeafLine,
+  RiHeartPulseLine,
   RiLogoutBoxLine,
   RiAdminLine,
   RiHome2Line,
@@ -49,6 +49,11 @@ const data = {
           icon: RiHome2Line,
         },
         {
+          title: "About MI",
+          url: "/aboutMI",
+          icon: RiHeartPulseLine,
+        },
+        {
           title: "Admin",
           url: "/admin",
           icon: RiAdminLine,
@@ -62,7 +67,7 @@ const data = {
           title: "Results",
           url: "/results",
           icon: RiLineChartLine,
-        },
+        }
       ],
     },
   ],

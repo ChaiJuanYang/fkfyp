@@ -1,0 +1,68 @@
+.ecg-comparison-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .ecg-comparison-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+  }
+  
+  .ecg-charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  
+  .ecg-chart-container {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .ecg-header h3 {
+    margin-top: 0;
+    color: #333;
+  }
+  
+  .ecg-canvas {
+    width: 100%;
+    background: white;
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
+  }
+  
+  .ecg-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+
+  .ecgChartsGrid {
+    display: flex;
+    gap: 3rem;           /* space between the two charts */
+    justify-content: center;
+    align-items: center;
+    margin-top: 2rem;
+  }
+  
+  .ecgChartsCard {
+    position: relative;
+    width: 500px;        /* pick whatever diameter you like */
+    height: 500px;       /* same as width for a perfect circle */
+    border:3px solid #ffffff;
+    justify-content: center;
+    border-radius: 10%;  /* makes it a circle */
+    overflow: hidden;    /* clip the ECG line to the circle */
+  }
+  
+  .ecgCanvas {
+    width: 100% !important;   /* fill the container */
+    height: 100% !important;  /* fill the container */
+    display: block;           /* remove inline-block whitespace */
+  }
+  
